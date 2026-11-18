@@ -32,6 +32,29 @@ An accessible adult cognitive-practice web application with 3 daily warm-up game
 5. **Open on Mobile (same Wi-Fi network):**
    Find your computer's local IP address (e.g. `192.168.1.42`) and open `http://192.168.1.42:3000` on your phone browser.
 
+## Install on Mobile Without Laptop Open (PWA + Downloadable APK)
+
+### Option A: Install Immediately as a Standalone Mobile App (PWA)
+This app includes a Web App Manifest (`manifest.webmanifest`) and Service Worker (`vite-plugin-pwa`):
+1. Open the deployed/shared HTTPS URL (e.g. `https://ais-pre-3zo32q3k6uppasl6r4bblz-310457913859.asia-east1.run.app`) directly on your phone browser (**Chrome on Android** or **Safari on iPhone**).
+2. Tap **Install App** (or Chrome `⋮ → Install app` / Safari `Share → Add to Home Screen`).
+3. Launch **Bright Mind** directly from your phone's home screen—no laptop needed—and sign in with Google to sync straight to Firebase Firestore.
+
+### Option B: Build the Downloadable Android `.apk` (Capacitor Pre-Configured)
+Capacitor (`capacitor.config.ts`) and the native Android project (`android/`) are already generated and synced in this repository:
+1. In VS Code, build the latest web assets and sync them into `android/`:
+   ```bash
+   npm install
+   npm run cap:sync
+   ```
+2. Open the `android/` project in Android Studio:
+   ```bash
+   npm run cap:android
+   ```
+3. In Android Studio, click **Build → Build Bundle(s) / APK(s) → Build APK(s)** (or run `./android/gradlew assembleDebug` in a terminal with Android SDK installed). The generated APK will be at `android/app/build/outputs/apk/debug/app-debug.apk`.
+4. **Alternative without Android Studio:** Paste the live HTTPS URL into [pwabuilder.com](https://www.pwabuilder.com) and download a packaged Android APK.
+
+
 ## Firebase Setup
 
 Firebase client configuration lives in `firebase-applet-config.json` and Firestore security rules live in `firestore.rules` (validated against `firebase-blueprint.json`).

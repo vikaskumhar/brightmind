@@ -1,0 +1,11 @@
+{
+	"appId": "com.brightmind.app",
+	"appName": "Bright Mind",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"android": {
+		"allowMixedContent": false
+	}
+}

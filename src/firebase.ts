@@ -1,8 +1,11 @@
+import { Capacitor } from '@capacitor/core';
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
+  getRedirectResult,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User as FirebaseUser
 } from 'firebase/auth';
@@ -143,10 +146,29 @@ export interface SessionInput {
   durationSeconds: number;
 }
 
-export async function signInWithGoogle(): Promise<FirebaseUser> {
-  const result = await signInWithPopup(auth, googleProvider);
-  await ensureUserProfile(result.user);
-  return result.user;
+void getRedirectResult(auth)
+  .then((res) => {
+    if (res?.user) return ensureUserProfile(res.user);
+    return undefined;
+  })
+  .catch(() => undefined);
+
+export async function signInWithGoogle(): Promise<FirebaseUser | null> {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    await ensureUserProfile(result.user);
+    return result.user;
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? '';
+    if (
+      Capacitor.isNativePlatform() &&
+      (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment')
+    ) {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function signOutFirebase(): Promise<void> {

@@ -121,7 +121,7 @@ service cloud.firestore {
 
       match /private/{docId} {
         allow get: if isOwner(userId) && isValidId(userId) && isValidId(docId);
-        allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+        allow list: if isOwner(userId) && isValidId(userId);
 
         allow create: if isOwner(userId) &&
           isValidId(userId) &&
@@ -144,7 +144,7 @@ service cloud.firestore {
 
       match /sessions/{sessionId} {
         allow get: if isOwner(userId) && isValidId(userId) && isValidId(sessionId);
-        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow list: if isOwner(userId) && isValidId(userId);
 
         allow create: if isOwner(userId) &&
           isValidId(userId) &&

@@ -15,6 +15,8 @@ import {
   type FirebaseUserProfile
 } from './firebase';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import {
   AdvancedCognitiveGamesModule,
   type SessionMetrics
@@ -289,6 +291,7 @@ function Landing({ start, openLab }: { start: () => void; openLab: () => void })
           <a href="#activities">Activities</a>
           <a href="#progress">Progress</a>
           <a href="#accessibility">Accessibility</a>
+          <PWAInstallButton />
           <button type="button" className="nav-start" onClick={start}>
             Sign in
           </button>
@@ -534,6 +537,7 @@ function Dashboard({
       <header>
         <div className="brand">✦ Bright Mind</div>
         <div className="header-actions">
+          <PWAInstallButton />
           <button
             type="button"
             className="quiet"
@@ -862,5 +866,6 @@ function App() {
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
     <App />
+    <OfflineIndicator />
   </ErrorBoundary>
 );
