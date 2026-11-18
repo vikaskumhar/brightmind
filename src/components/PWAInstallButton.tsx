@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const PWAInstallButton: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
 
-  if (isInstalled) {
+  if (isInstalled || Capacitor.isNativePlatform()) {
     return null;
   }
 

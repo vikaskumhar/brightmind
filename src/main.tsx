@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Capacitor } from '@capacitor/core';
+import { registerSW } from 'virtual:pwa-register';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import {
   auth,
@@ -861,6 +863,18 @@ function App() {
       openLab={() => setView('guest-lab')}
     />
   );
+}
+
+if (Capacitor.isNativePlatform()) {
+  if ('serviceWorker' in navigator) {
+    void navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((reg) => {
+        void reg.unregister();
+      });
+    });
+  }
+} else {
+  registerSW({ immediate: true });
 }
 
 createRoot(document.getElementById('root')!).render(

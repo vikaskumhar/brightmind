@@ -23,6 +23,34 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        function showBootError(msg) {
+          var root = document.getElementById('root');
+          if (!root || root.childElementCount > 0) return;
+          var main = document.createElement('main');
+          main.className = 'auth-shell';
+          var card = document.createElement('section');
+          card.className = 'auth-card';
+          var h1 = document.createElement('h1');
+          h1.textContent = 'Bright Mind could not start';
+          var p = document.createElement('p');
+          p.className = 'error';
+          p.textContent = msg;
+          card.appendChild(h1);
+          card.appendChild(p);
+          main.appendChild(card);
+          root.appendChild(main);
+        }
+        window.addEventListener('error', function (e) {
+          showBootError((e && e.message) || 'Unknown startup script error');
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e && e.reason;
+          showBootError((r && r.message) || String(r || 'Unhandled startup rejection'));
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
