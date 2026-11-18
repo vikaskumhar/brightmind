@@ -1,11 +1,11 @@
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
-  getRedirectResult,
   GoogleAuthProvider,
+  signInWithCredential,
   signInWithPopup,
-  signInWithRedirect,
   signOut,
   type User as FirebaseUser
 } from 'firebase/auth';
@@ -146,32 +146,34 @@ export interface SessionInput {
   durationSeconds: number;
 }
 
-void getRedirectResult(auth)
-  .then((res) => {
-    if (res?.user) return ensureUserProfile(res.user);
-    return undefined;
-  })
-  .catch(() => undefined);
-
 export async function signInWithGoogle(): Promise<FirebaseUser | null> {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
+  if (Capacitor.isNativePlatform()) {
+    const nativeResult = await FirebaseAuthentication.signInWithGoogle();
+    const idToken = nativeResult.credential?.idToken;
+    if (!idToken) {
+      throw new Error(
+        'Mobile Google Sign-In did not return an ID token. Verify google-services.json and SHA-1 in Firebase Console.'
+      );
+    }
+    const credential = GoogleAuthProvider.credential(idToken);
+    const result = await signInWithCredential(auth, credential);
     await ensureUserProfile(result.user);
     return result.user;
-  } catch (err) {
-    const code = (err as { code?: string })?.code ?? '';
-    if (
-      Capacitor.isNativePlatform() &&
-      (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment')
-    ) {
-      await signInWithRedirect(auth, googleProvider);
-      return null;
-    }
-    throw err;
   }
+
+  const result = await signInWithPopup(auth, googleProvider);
+  await ensureUserProfile(result.user);
+  return result.user;
 }
 
 export async function signOutFirebase(): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await FirebaseAuthentication.signOut();
+    } catch {
+      // Ignore native sign-out error and still clear JS SDK session
+    }
+  }
   await signOut(auth);
 }
 

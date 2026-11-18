@@ -40,19 +40,28 @@ This app includes a Web App Manifest (`manifest.webmanifest`) and Service Worker
 2. Tap **Install App** (or Chrome `⋮ → Install app` / Safari `Share → Add to Home Screen`).
 3. Launch **Bright Mind** directly from your phone's home screen—no laptop needed—and sign in with Google to sync straight to Firebase Firestore.
 
-### Option B: Build the Downloadable Android `.apk` (Capacitor Pre-Configured)
-Capacitor (`capacitor.config.ts`) and the native Android project (`android/`) are already generated and synced in this repository:
-1. In VS Code, build the latest web assets and sync them into `android/`:
+### Option B: Build the Downloadable Android `.apk` (Capacitor + Native Google Sign-In)
+Capacitor (`capacitor.config.ts`), `@capacitor-firebase/authentication`, and the native Android project (`android/`) are pre-configured in this repository:
+1. Get your Android debug SHA-1 fingerprint (from the `android/` folder):
+   ```bash
+   cd android && ./gradlew signingReport
+   ```
+   Copy the `SHA1` value under `Variant: debug`.
+2. In **Firebase Console → Project Settings → Your apps → Add app → Android**:
+   - **Android package name:** `com.brightmind.app`
+   - **Debug signing certificate SHA-1:** paste the SHA-1 from step 1
+   - Download `google-services.json` and save it at `android/app/google-services.json`
+3. In VS Code, install dependencies, build web assets, and sync them into `android/`:
    ```bash
    npm install
    npm run cap:sync
    ```
-2. Open the `android/` project in Android Studio:
+4. Open the `android/` project in Android Studio:
    ```bash
    npm run cap:android
    ```
-3. In Android Studio, click **Build → Build Bundle(s) / APK(s) → Build APK(s)** (or run `./android/gradlew assembleDebug` in a terminal with Android SDK installed). The generated APK will be at `android/app/build/outputs/apk/debug/app-debug.apk`.
-4. **Alternative without Android Studio:** Paste the live HTTPS URL into [pwabuilder.com](https://www.pwabuilder.com) and download a packaged Android APK.
+5. In Android Studio, click **Build → Build Bundle(s) / APK(s) → Build APK(s)** (or run `cd android && ./gradlew assembleDebug`). The generated APK will be at `android/app/build/outputs/apk/debug/app-debug.apk`.
+6. **Alternative without `google-services.json` or Android Studio:** Paste the live HTTPS URL into [pwabuilder.com](https://www.pwabuilder.com) and download a packaged Android APK (runs via Chrome Custom Tabs so Google Sign-In works immediately).
 
 
 ## Firebase Setup
