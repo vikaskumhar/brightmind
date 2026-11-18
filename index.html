@@ -22,12 +22,14 @@
     <title>Bright Mind</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">Loading Bright Mind…</div>
     <script>
       (function () {
         function showBootError(msg) {
+          if (window.__BM_MOUNTED__) return;
           var root = document.getElementById('root');
-          if (!root || root.childElementCount > 0) return;
+          if (!root) return;
+          root.textContent = '';
           var main = document.createElement('main');
           main.className = 'auth-shell';
           var card = document.createElement('section');
@@ -42,13 +44,31 @@
           main.appendChild(card);
           root.appendChild(main);
         }
-        window.addEventListener('error', function (e) {
-          showBootError((e && e.message) || 'Unknown startup script error');
-        });
+        window.addEventListener(
+          'error',
+          function (e) {
+            var target = e && e.target;
+            if (target && target.tagName === 'SCRIPT') {
+              showBootError('Failed to load script: ' + (target.src || 'module'));
+              return;
+            }
+            showBootError((e && e.message) || 'Unknown startup script error');
+          },
+          true
+        );
         window.addEventListener('unhandledrejection', function (e) {
           var r = e && e.reason;
           showBootError((r && r.message) || String(r || 'Unhandled startup rejection'));
         });
+        window.setTimeout(function () {
+          if (!window.__BM_MOUNTED__) {
+            showBootError(
+              'App script did not mount on ' +
+                window.location.href +
+                '. Please check WebView console or rebuild with npm run cap:sync.'
+            );
+          }
+        }, 3500);
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>

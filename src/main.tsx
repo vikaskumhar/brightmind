@@ -877,6 +877,8 @@ if (Capacitor.isNativePlatform()) {
   registerSW({ immediate: true });
 }
 
+(window as unknown as { __BM_MOUNTED__?: boolean }).__BM_MOUNTED__ = true;
+
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
     <App />
