@@ -1,21 +1,63 @@
 # Bright Mind
 
-An accessible cognitive-practice web app designed for older adults. Includes account flow, three short activities, saved progress, accessibility preferences, and English/Hindi foundations.
+An accessible adult cognitive-practice web application with 3 daily warm-up games and a plug-and-play **6-exercise Advanced Cognitive Games Module** (`src/modules/AdvancedCognitiveGamesModule.tsx`), backed by **Firebase Authentication (Google Sign-In)** and **Cloud Firestore**.
 
-## Run locally
+## Included Cognitive Exercises
 
-1. Copy `.env.example` to `.env` and set a long random `JWT_SECRET`.
-2. Run `npm ci`.
-3. Run `npm run dev`, then open the Vite address shown (usually `http://localhost:5173`).
+### Advanced Cognitive Suite (`AdvancedCognitiveGamesModule`)
+1. **Mental Rotation 2D/3D Grid** — Visuospatial Manipulation (12 rounds, 5×5 asymmetrical polyominoes rotated 90°/180°/270° vs mirrored/altered decoys)
+2. **Trail Making Test A & B** — Visual Attention & Task-Switching (16 nodes alternating `1 → A → 2 → B ... 8 → H`)
+3. **Corsi Block-Tapping Span** — Visuospatial Working Memory (9 irregular blocks, Forward on odd rounds, Reverse on even rounds, adaptive span)
+4. **Calcudoku 4×4** — Numerical Logic & Constraint Satisfaction (procedural Latin square & arithmetic cages `+`, `-`, `×`, `÷`)
+5. **Rapid Visual Information Processing (RVIP)** — Sustained Vigilance (60s digit stream at 600ms/digit, 3-odd or 3-even target sequences)
+6. **Anagrams & Word Unscrambler** — Verbal Fluency & Lexical Retrieval (60s countdown, 160+ adult-level 6–7 letter dictionary words, shuffle & streak bonus)
 
-### Supabase hosted database
+### Daily Warm-Up Classics
+- Memory Match
+- Number Sequence
+- Word Builder
 
-The free Supabase tier can host the PostgreSQL database. Create a project, open its SQL Editor, and run `database/schema.sql`. Copy the project URL and **service_role** key into `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in `.env`; never put the service role key in frontend code or commit `.env`. Keep a strong, private `JWT_SECRET`. Restart the server. If the Supabase values are absent, the app uses its local JSON store in `data/`.
+## Run Directly in VS Code (Desktop & Mobile)
 
-Deploy the Node API to a host that runs long-lived Express services, configure the same server environment variables, and point the client API requests to that service (or serve the Vite build from the same origin with `/api` proxied). Hosted free tiers and usage limits can change, so check the provider's current plan before deploying.
+1. Open this folder in **VS Code**.
+2. Open the integrated terminal (`Ctrl + \`` or `Cmd + \``) and install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the app (builds the frontend and serves both UI + API on `0.0.0.0:3000`):
+   ```bash
+   npm run dev
+   ```
+4. Open on your computer: `http://localhost:3000`
+5. **Open on Mobile (same Wi-Fi network):**
+   Find your computer's local IP address (e.g. `192.168.1.42`) and open `http://192.168.1.42:3000` on your phone browser.
 
-`npm run check` checks TypeScript and `npm run build` creates production assets.
+## Firebase Setup
 
-## Product boundaries
+Firebase client configuration lives in `firebase-applet-config.json` and Firestore security rules live in `firestore.rules` (validated against `firebase-blueprint.json`).
+- **Authentication:** Google Sign-In (`signInWithPopup`)
+- **Firestore Collections:**
+  - `/users/{userId}` — non-PII profile, accessibility preferences, streaks, and total session counts
+  - `/users/{userId}/private/info` — owner-only isolated PII (email, photo URL)
+  - `/users/{userId}/sessions/{sessionId}` — immutable completed cognitive exercise telemetry (`gameId`, `domain`, `score`, `accuracyPercent`, `avgReactionTimeMs`, `durationSeconds`, `playedAt`)
 
-Bright Mind supports enjoyable skills practice and never offers medical assessment or diagnosis. Caregiver and administrator workflows are not implemented yet.
+> **Important for Firebase Auth on custom/local domains:** Ensure `localhost` (and any custom preview/production domain) is listed under **Firebase Console → Authentication → Settings → Authorized domains**.
+
+## Push to GitHub from VS Code
+
+```bash
+git init
+git add .
+git commit -m "Add Bright Mind with 6-game AdvancedCognitiveGamesModule and Firebase Firestore"
+git branch -M main
+git remote add origin https://github.com/<your-username>/<your-repo>.git
+git push -u origin main
+```
+
+## Scripts
+
+- `npm run dev` — Build frontend and start server on port `3000` (`0.0.0.0`)
+- `npm run check` — Type-check client and server TypeScript
+- `npm run build` — Production build (`dist/` and `dist-server/`)
+- `npm start` — Run production Node server
+- `npx eslint firestore.rules` — Lint Firestore security rules

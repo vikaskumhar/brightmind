@@ -1,0 +1,206 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Publicly scoped user cognitive training profile, preferences, and aggregate progress metrics (no PII).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the user."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name shown in the dashboard."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["member"],
+          "description": "Account role, strictly fixed to member on client writes."
+        },
+        "ageRange": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Optional age bracket for practice personalization."
+        },
+        "totalGames": {
+          "type": "integer",
+          "description": "Total cognitive sessions completed."
+        },
+        "streakDays": {
+          "type": "integer",
+          "description": "Consecutive active practice days."
+        },
+        "lastPlayedDate": {
+          "type": "string",
+          "maxLength": 10,
+          "pattern": "^(\\d{4}-\\d{2}-\\d{2})?$",
+          "description": "ISO date YYYY-MM-DD of the most recent completed session."
+        },
+        "textSize": {
+          "type": "string",
+          "enum": ["large", "extra-large"],
+          "description": "Preferred UI text scale."
+        },
+        "highContrast": {
+          "type": "boolean",
+          "description": "High-contrast display toggle."
+        },
+        "soundEnabled": {
+          "type": "boolean",
+          "description": "Audio cue toggle."
+        },
+        "reducedMotion": {
+          "type": "boolean",
+          "description": "Reduced animation toggle."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["en", "hi"],
+          "description": "Preferred display language."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when profile was last updated."
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "role",
+        "totalGames",
+        "streakDays",
+        "lastPlayedDate",
+        "textSize",
+        "highContrast",
+        "soundEnabled",
+        "reducedMotion",
+        "language",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Isolated PII document for a user account.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 254,
+          "description": "Verified email address."
+        },
+        "photoUrl": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Optional profile avatar URL."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when private info was updated."
+        }
+      },
+      "required": ["uid", "email", "updatedAt"]
+    },
+    "CognitiveSession": {
+      "title": "CognitiveSession",
+      "description": "Completed cognitive exercise session telemetry recorded under a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID."
+        },
+        "gameId": {
+          "type": "string",
+          "enum": [
+            "memory",
+            "numbers",
+            "words",
+            "mental-rotation",
+            "trail-making-ab",
+            "corsi-span",
+            "calcudoku-4x4",
+            "rvip-vigilance",
+            "anagrams-fluency"
+          ],
+          "description": "Identifier of the completed cognitive exercise."
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Cognitive domain targeted by the exercise."
+        },
+        "score": {
+          "type": "number",
+          "description": "Session score achieved."
+        },
+        "accuracyPercent": {
+          "type": "number",
+          "description": "Accuracy percentage from 0 to 100."
+        },
+        "avgReactionTimeMs": {
+          "type": "number",
+          "description": "Mean reaction time in milliseconds."
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Elapsed session duration in seconds."
+        },
+        "playedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the session was completed."
+        }
+      },
+      "required": [
+        "userId",
+        "gameId",
+        "domain",
+        "score",
+        "accuracyPercent",
+        "avgReactionTimeMs",
+        "durationSeconds",
+        "playedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile, accessibility settings, and aggregate stats (PII excluded)."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Strictly isolated PII document (e.g. docId='info') readable and writable only by the owner."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/CognitiveSession" },
+      "description": "Immutable completed cognitive exercise sessions owned by the user."
+    }
+  }
+}

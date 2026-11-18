@@ -1,0 +1,162 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default deny everything
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUserProfile(data, expectedUid) {
+      return data.keys().hasAll([
+        'uid', 'displayName', 'role', 'totalGames', 'streakDays',
+        'lastPlayedDate', 'textSize', 'highContrast', 'soundEnabled',
+        'reducedMotion', 'language', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'uid', 'displayName', 'role', 'ageRange', 'totalGames', 'streakDays',
+        'lastPlayedDate', 'textSize', 'highContrast', 'soundEnabled',
+        'reducedMotion', 'language', 'createdAt', 'updatedAt'
+      ]) &&
+      data.uid is string && data.uid == expectedUid && isValidId(data.uid) &&
+      data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+      data.role is string && data.role == 'member' &&
+      (!('ageRange' in data) || (data.ageRange is string && data.ageRange.size() <= 30)) &&
+      data.totalGames is int && data.totalGames >= 0 && data.totalGames <= 1000000 &&
+      data.streakDays is int && data.streakDays >= 0 && data.streakDays <= 10000 &&
+      data.lastPlayedDate is string && data.lastPlayedDate.size() <= 10 &&
+      data.lastPlayedDate.matches('^(\\d{4}-\\d{2}-\\d{2})?$') &&
+      data.textSize in ['large', 'extra-large'] &&
+      data.highContrast is bool &&
+      data.soundEnabled is bool &&
+      data.reducedMotion is bool &&
+      data.language in ['en', 'hi'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidPrivateInfo(data, expectedUid) {
+      return data.keys().hasAll(['uid', 'email', 'updatedAt']) &&
+      data.keys().hasOnly(['uid', 'email', 'photoUrl', 'updatedAt']) &&
+      data.uid is string && data.uid == expectedUid && isValidId(data.uid) &&
+      data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+      (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 512)) &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidSession(data, expectedUid) {
+      return data.keys().hasAll([
+        'userId', 'gameId', 'domain', 'score',
+        'accuracyPercent', 'avgReactionTimeMs', 'durationSeconds', 'playedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'userId', 'gameId', 'domain', 'score',
+        'accuracyPercent', 'avgReactionTimeMs', 'durationSeconds', 'playedAt'
+      ]) &&
+      data.userId is string && data.userId == expectedUid && isValidId(data.userId) &&
+      data.gameId in [
+        'memory', 'numbers', 'words',
+        'mental-rotation', 'trail-making-ab', 'corsi-span',
+        'calcudoku-4x4', 'rvip-vigilance', 'anagrams-fluency'
+      ] &&
+      data.domain is string && data.domain.size() >= 2 && data.domain.size() <= 80 &&
+      (data.score is int || data.score is float) && data.score >= 0 && data.score <= 10000 &&
+      (data.accuracyPercent is int || data.accuracyPercent is float) && data.accuracyPercent >= 0 && data.accuracyPercent <= 100 &&
+      (data.avgReactionTimeMs is int || data.avgReactionTimeMs is float) && data.avgReactionTimeMs >= 0 && data.avgReactionTimeMs <= 600000 &&
+      (data.durationSeconds is int || data.durationSeconds is float) && data.durationSeconds >= 0 && data.durationSeconds <= 7200 &&
+      data.playedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().role == existing().role &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'textSize', 'highContrast', 'soundEnabled', 'reducedMotion',
+            'language', 'ageRange', 'displayName', 'updatedAt'
+          ]) ||
+          (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'totalGames', 'streakDays', 'lastPlayedDate', 'updatedAt'
+            ]) &&
+            incoming().totalGames == existing().totalGames + 1
+          )
+        );
+
+      allow delete: if false;
+
+      match /private/{docId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(docId);
+        allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+          isValidId(userId) &&
+          docId == 'info' &&
+          isValidPrivateInfo(incoming(), userId) &&
+          incoming().updatedAt == request.time &&
+          existsAfter(/databases/$(database)/documents/users/$(userId));
+
+        allow update: if isOwner(userId) &&
+          isValidId(userId) &&
+          docId == 'info' &&
+          isValidPrivateInfo(incoming(), userId) &&
+          incoming().uid == existing().uid &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['email', 'photoUrl', 'updatedAt']) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+
+        allow delete: if false;
+      }
+
+      match /sessions/{sessionId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(sessionId);
+        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+        allow create: if isOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(sessionId) &&
+          isValidSession(incoming(), userId) &&
+          incoming().playedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          getAfter(/databases/$(database)/documents/users/$(userId)).data.totalGames >= 1;
+
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(sessionId);
+      }
+    }
+  }
+}
